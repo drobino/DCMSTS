@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% block title %}Set up MFA{% endblock %}
+{% block content %}
+<div class="card narrow"><h1>Set up multi-factor authentication</h1>
+<p>Your role requires MFA. Add this account to an authenticator app (Google Authenticator, Microsoft Authenticator, 1Password…) using the key below, then enter the current code.</p>
+<p><strong>Setup key:</strong> <code class="key">{{ secret }}</code></p>
+<details><summary>otpauth URI</summary><code class="wrap">{{ uri }}</code></details>
+<form method="post" data-no-offline><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label>6-digit code <input name="code" inputmode="numeric" pattern="[0-9]{6}" required autocomplete="one-time-code"></label>
+<button class="primary">Enable MFA</button></form></div>
+{% endblock %}

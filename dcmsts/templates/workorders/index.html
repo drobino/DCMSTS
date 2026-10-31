@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% from "macros.html" import wo_table %}{% block title %}Work orders{% endblock %}
+{% block content %}
+<h1>Work orders</h1>
+<form method="get" class="filters">
+<select name="status"><option value="">All</option><option value="open" {{ 'selected' if request.args.status == 'open' }}>Open</option><option value="overdue" {{ 'selected' if request.args.status == 'overdue' }}>Overdue</option>
+{% for s in statuses %}<option value="{{ s }}" {{ 'selected' if request.args.status == s }}>{{ s|replace('_',' ') }}</option>{% endfor %}</select>
+<select name="type"><option value="">All types</option><option value="preventive" {{ 'selected' if request.args.type == 'preventive' }}>preventive</option><option value="corrective" {{ 'selected' if request.args.type == 'corrective' }}>corrective</option></select>
+<button>Filter</button>
+{% if current_user.can('workorders.create') %}<a class="button primary" href="{{ url_for('workorders.new') }}">New / report fault</a>{% endif %}
+</form>
+{{ wo_table(rows) }}
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% from "macros.html" import wo_table %}{% block title %}{{ t.full_name }}{% endblock %}
+{% block content %}
+<h1>{{ t.full_name }}</h1>
+<p class="muted">{{ t.email }} · completed {{ perf.completed }} · on time {{ perf.on_time }} · avg resolution {{ perf.avg_hours if perf.avg_hours is not none else '—' }} h</p>
+<form method="post" class="card form-grid" data-no-offline>
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label class="full">Skills (comma-separated) <input name="skills" maxlength="300" value="{{ t.skills or '' }}"></label>
+<label class="full">Certifications (one per line: <code>Name | YYYY-MM-DD</code>; a certification named like a skill gates that skill until renewed)
+<textarea name="certifications" rows="4">{% for c in t.certifications %}{{ c.name }}{% if c.expires %} | {{ c.expires }}{% endif %}
+{% endfor %}</textarea></label>
+<div><button class="primary">Save</button></div></form>
+<h2>Recent tasks</h2>{{ wo_table(recent) }}
+{% endblock %}

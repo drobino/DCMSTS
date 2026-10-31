@@ -1,0 +1,82 @@
+{% extends "base.html" %}{% from "macros.html" import wo_list %}{% from "_icons.html" import icon %}
+{% block title %}Calendar{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='datepicker.js') }}" defer></script>{% endblock %}
+{% block content %}
+{% set MAX_PER_DAY = 3 %}
+{% macro state(wo) %}{{ 'overdue' if wo.is_overdue and wo.status != 'completed' else wo.status }}{% endmacro %}
+<div class="pagehead">
+  <div><p class="eyebrow">Calendar</p><h1>Maintenance calendar</h1></div>
+</div>
+
+<div class="calbar">
+  <div class="calnav">
+    <div class="segmented">
+      <a class="seg" href="{{ url_for('dashboard.calendar_view', year=prev_m.year, month=prev_m.month, **active_filters) }}" title="Previous month" aria-label="Previous month">‹</a>
+      <span class="seg calmonth">{{ first.strftime('%B %Y') }}</span>
+      <a class="seg" href="{{ url_for('dashboard.calendar_view', year=next_m.year, month=next_m.month, **active_filters) }}" title="Next month" aria-label="Next month">›</a>
+    </div>
+    <a class="button" href="{{ url_for('dashboard.calendar_view', **active_filters) }}">Today</a>
+    <form method="get" class="datejump" action="{{ url_for('dashboard.calendar_view') }}">
+      {% for k, v in active_filters.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+      {# Themed date picker (static/datepicker.js). It writes the chosen day into the date input and submits. #}
+      {% set shown = selected or first %}
+      <div class="datepick jsonly" data-datepicker data-value="{{ shown.isoformat() }}" data-today="{{ today.isoformat() }}">
+        <button type="button" class="button datepick-btn" aria-haspopup="dialog" aria-expanded="false" title="Jump to a date">
+          {{ icon('calendar') }}<span class="datepick-label">{{ shown.day }} {{ shown.strftime('%b %Y') }}</span>
+          <svg class="icon chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="datepick-pop" role="dialog" aria-label="Choose a date" hidden></div>
+      </div>
+      {# Without JavaScript: the browser's own date field and a Go button. #}
+      <label class="datefield nojs-only"><span class="sr-only">Go to date</span>
+        <input type="date" name="date" value="{{ shown.isoformat() }}" min="1900-01-01" max="2999-12-31" required></label>
+      <button class="nojs-only">Go</button>
+    </form>
+  </div>
+</div>
+
+<form method="get" class="filters">
+  <input type="hidden" name="year" value="{{ first.year }}"><input type="hidden" name="month" value="{{ first.month }}">{% if selected %}<input type="hidden" name="date" value="{{ selected.isoformat() }}">{% endif %}
+  {% if assets %}
+  <select name="asset_id"><option value="">All assets</option>{% for a in assets %}<option value="{{ a.asset_id }}" {{ 'selected' if filters.asset_id == a.asset_id }}>{{ a.asset_tag }}</option>{% endfor %}</select>
+  <select name="assigned_to"><option value="">All technicians</option>{% for t in techs %}<option value="{{ t.user_id }}" {{ 'selected' if filters.assigned_to == t.user_id }}>{{ t.full_name }}</option>{% endfor %}</select>
+  <select name="vendor_id"><option value="">All vendors</option>{% for v in vendors %}<option value="{{ v.vendor_id }}" {{ 'selected' if filters.vendor_id == v.vendor_id }}>{{ v.company_name }}</option>{% endfor %}</select>
+  {% endif %}
+  <select name="status"><option value="">All statuses</option>{% for s in ['unassigned','assigned','in_progress','blocked','completed','overdue'] %}<option value="{{ s }}" {{ 'selected' if filters.status == s }}>{{ s|replace('_',' ') }}</option>{% endfor %}</select>
+  <button>Filter</button>
+  <span class="legend" aria-label="Status colours">
+    <span class="lg s-assigned">Assigned</span><span class="lg s-in_progress">In progress</span><span class="lg s-unassigned">Unassigned</span>
+    <span class="lg s-blocked">Blocked</span><span class="lg s-overdue">Overdue</span><span class="lg s-completed">Completed</span>
+  </span>
+</form>
+
+<div class="callayout">
+  <div class="cal" role="grid" aria-label="{{ first.strftime('%B %Y') }}">
+  {% for d in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}<div class="cal-h" role="columnheader">{{ d }}</div>{% endfor %}
+  {% for week in weeks %}{% for day in week %}{% set items = by_day.get(day, []) %}
+  {%- set day_url = url_for('dashboard.calendar_view', date=day.isoformat(), **active_filters) -%}
+  <div class="cal-d{{ ' other' if day.month != first.month }}{{ ' today' if day == today }}{{ ' selected' if day == selected }}{{ ' has-items' if items }}" role="gridcell">
+    <a class="cal-n" href="{{ day_url }}" aria-label="{{ day.strftime('%A') }} {{ day.day }} {{ day.strftime('%B') }}: {{ items|length }} task{{ 's' if items|length != 1 }}">{{ day.day }}</a>
+    {% for wo in items[:MAX_PER_DAY] %}
+    <a class="cal-e s-{{ state(wo) }}" href="{{ url_for('workorders.detail', wo_id=wo.work_order_id) }}" title="{{ wo.due_date.strftime('%H:%M') }} · {{ wo.asset.asset_tag }} · {{ wo.title }} ({{ state(wo)|replace('_', ' ') }})"><b>{{ wo.asset.asset_tag }}</b><span>{{ wo.title }}</span></a>
+    {% endfor %}
+    {% if items|length > MAX_PER_DAY %}<a class="cal-more" href="{{ day_url }}">+{{ items|length - MAX_PER_DAY }} more</a>{% endif %}
+  </div>
+  {% endfor %}{% endfor %}
+  </div>
+
+  <aside class="daypanel" aria-label="Tasks for the selected day">
+    {% if selected %}
+      <div class="daypanel-head">
+        <div><p class="eyebrow">{{ 'Today' if selected == today else selected.strftime('%A') }}</p>
+        <h2>{{ selected.day }} {{ selected.strftime('%B %Y') }}</h2></div>
+        <span class="badge">{{ day_tasks|length }} task{{ 's' if day_tasks|length != 1 }}</span>
+      </div>
+      {{ wo_list(day_tasks, empty='Nothing scheduled on this day.') }}
+    {% else %}
+      <div class="daypanel-head"><div><p class="eyebrow">{{ first.strftime('%B') }}</p><h2>Pick a day</h2></div></div>
+      <p class="muted">Select a date in the calendar to see all of its tasks here. {{ by_day.values()|map('length')|sum }} task{{ 's' if by_day.values()|map('length')|sum != 1 }} this month.</p>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

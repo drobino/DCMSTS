@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% from "macros.html" import risk %}{% block title %}Recommendations{% endblock %}
+{% block content %}
+<h1>Predictive recommendations queue</h1>
+{% if not queue %}
+<div class="card empty-state"><h2>No pending recommendations</h2><p>All predictions above the review threshold have a recorded decision. New ones appear after the next scoring run.</p></div>
+{% else %}
+<form method="post" action="{{ url_for('predictive.bulk_dismiss') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<div class="tablewrap"><table><thead><tr><th></th><th>Asset</th><th>Risk</th><th>Top factors</th><th>Window</th><th></th></tr></thead><tbody>
+{% for p in queue %}<tr><td><input type="checkbox" name="ids" value="{{ p.prediction_id }}" {{ 'checked' if p.low_confidence }}></td><td>{{ p.asset.asset_tag }} {{ p.asset.name }}</td><td>{{ risk(p) }}</td>
+<td><ul class="tight">{% for f in p.contributing_factors %}<li>{{ f.text }}</li>{% endfor %}</ul></td><td>{{ p.recommended_window_start }} – {{ p.recommended_window_end }}</td>
+<td><a class="button" href="{{ url_for('predictive.review', pred_id=p.prediction_id) }}">Review</a></td></tr>{% endfor %}
+</tbody></table></div>
+<div class="filters"><input name="note" maxlength="1000" placeholder="Reason for dismissing selected (required)"><button>Dismiss selected</button></div>
+</form>
+{% endif %}
+{% endblock %}

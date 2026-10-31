@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% from "macros.html" import csrf %}{% block title %}Models{% endblock %}
+{% block content %}
+<h1>Predictive model versions</h1>
+<p>Active: <strong>{{ active }}</strong>. Training uses a time-based holdout (latest 25% of history). Promotion is always a manual decision; promoting a retired version rolls back.</p>
+<form method="post" action="{{ url_for('predictive.train') }}">{{ csrf() }}<button class="primary">Train new candidate</button></form>
+<div class="tablewrap"><table><thead><tr><th>Version</th><th>Status</th><th>Trained</th><th>Precision</th><th>Recall</th><th>AUC</th><th>Holdout</th><th>Meets 80% recall</th><th></th></tr></thead><tbody>
+{% for m in rows %}<tr><td>{{ m.version }}</td><td>{{ m.status }}</td><td>{{ m.trained_at.strftime('%Y-%m-%d %H:%M') }}</td><td>{{ m.metrics.precision }}</td><td>{{ m.metrics.recall }}</td><td>{{ m.metrics.auc }}</td><td>{{ m.metrics.holdout_snapshots }} ({{ m.metrics.holdout_positives }} pos) from {{ m.metrics.holdout_from }}</td><td>{{ 'yes' if m.metrics.meets_recall_target else 'no' }}</td>
+<td>{% if m.status in ['candidate','retired'] %}<form method="post" action="{{ url_for('predictive.model_action', version=m.version, action='promote') }}" class="inline">{{ csrf() }}<button>Promote</button></form>{% endif %}
+{% if m.status == 'candidate' %}<form method="post" action="{{ url_for('predictive.model_action', version=m.version, action='discard') }}" class="inline">{{ csrf() }}<button>Discard</button></form>{% endif %}</td></tr>
+{% else %}<tr><td colspan="9" class="empty">No trained models; rules-v1 is in use.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

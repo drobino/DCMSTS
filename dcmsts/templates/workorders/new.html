@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% block title %}New work order{% endblock %}
+{% block content %}
+<h1>New corrective work order / fault report</h1>
+<form method="post" class="card form-grid" data-no-offline>
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label>Asset* <select name="asset_id" required>{% for a in assets %}<option value="{{ a.asset_id }}" {{ 'selected' if (request.form.asset_id or preselect) == a.asset_id }}>{{ a.asset_tag }} – {{ a.name }}</option>{% endfor %}</select></label>
+<label>Title* <input name="title" required maxlength="200" value="{{ request.form.title or '' }}"></label>
+<label>Priority <select name="priority">{% for p in priorities %}<option {{ 'selected' if (request.form.priority or 'medium') == p }}>{{ p }}</option>{% endfor %}</select></label>
+<label>Required skill <input name="required_skill" maxlength="80" value="{{ request.form.required_skill or '' }}"></label>
+<label>Due (blank = from SLA policy) <input type="datetime-local" name="due_date" value="{{ request.form.due_date or '' }}"></label>
+<label class="full">Description <textarea name="description" rows="3" maxlength="4000">{{ request.form.description or '' }}</textarea></label>
+<label class="full">Checklist (optional, one per line) <textarea name="checklist" rows="3">{{ request.form.checklist or '' }}</textarea></label>
+<fieldset class="full"><legend>Incident / downtime</legend>
+<label class="check"><input type="checkbox" name="is_incident" {{ 'checked' if request.form.is_incident }}> This is a fault causing downtime</label>
+<label>Downtime started <input type="datetime-local" name="downtime_start" value="{{ request.form.downtime_start or '' }}"></label>
+<label>Cause <input name="downtime_cause" maxlength="150" value="{{ request.form.downtime_cause or '' }}" placeholder="e.g. battery failure"></label>
+</fieldset>
+<div><button class="primary">Create</button></div>
+</form>
+{% endblock %}

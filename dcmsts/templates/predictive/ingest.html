@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% from "macros.html" import csrf %}{% block title %}Telemetry import{% endblock %}
+{% block content %}
+<h1>Telemetry import</h1>
+<p>CSV header: <code>asset_tag,metric_name,metric_value,recorded_at</code>. Metrics: temperature (°C), load_pct, runtime_hours, vibration. Timestamps ISO-8601. Invalid rows are quarantined; if they exceed the configured ratio the whole batch is halted.</p>
+<form method="post" enctype="multipart/form-data" class="card" data-no-offline>{{ csrf() }}<input type="file" name="file" accept=".csv" required> <button class="primary">Import</button></form>
+<h2>Batches</h2>
+<div class="tablewrap"><table><thead><tr><th>When</th><th>File</th><th>Status</th><th>Loaded</th><th>Rejected</th><th>Errors (first)</th><th></th></tr></thead><tbody>
+{% for b in batches %}<tr><td>{{ b.created_at.strftime('%Y-%m-%d %H:%M') }}</td><td>{{ b.filename }}</td><td>{{ b.status }}</td><td>{{ b.loaded }}</td><td>{{ b.rejected }}</td>
+<td>{% for e in b.errors[:5] %}line {{ e.line }}: {{ e.error }}<br>{% endfor %}</td>
+<td>{% if b.status == 'loaded' %}<form method="post" action="{{ url_for('predictive.rollback', batch_id=b.batch_id) }}">{{ csrf() }}<button>Roll back</button></form>{% endif %}</td></tr>
+{% else %}<tr><td colspan="7" class="empty">No imports yet.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

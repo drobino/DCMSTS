@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% from "macros.html" import csrf %}{% block title %}Users{% endblock %}
+{% block content %}{% include "admin/_nav.html" %}
+<h1>User accounts</h1>
+<p><a class="button primary" href="{{ url_for('admin.new_user') }}">Create user</a></p>
+<div class="tablewrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role / status</th><th>MFA</th><th>Locked</th><th>Reset password</th><th></th></tr></thead><tbody>
+{% for u in users %}<tr><td>{{ u.full_name }}{% if u.vendor %}<br><span class="muted">{{ u.vendor.company_name }}</span>{% endif %}</td><td>{{ u.email }}</td>
+<td><form method="post" action="{{ url_for('admin.update_user', user_id=u.user_id) }}" class="inline">{{ csrf() }}
+<select name="role_id">{% for r in roles %}<option value="{{ r.role_id }}" {{ 'selected' if r.role_id == u.role_id }}>{{ r.role_name }}</option>{% endfor %}</select>
+<select name="status">{% for s in ['active','suspended','deactivated'] %}<option {{ 'selected' if u.status == s }}>{{ s }}</option>{% endfor %}</select>
+<button>Save</button></form></td>
+<td>{{ 'on' if u.mfa_enabled else 'off' }}{% if u.mfa_enabled %} <form method="post" action="{{ url_for('admin.reset_mfa', user_id=u.user_id) }}" class="inline">{{ csrf() }}<button class="link">reset</button></form>{% endif %}</td>
+<td>{{ u.locked_until.strftime('%H:%M') if u.locked_until and u.locked_until > now else '' }}</td>
+<td><form method="post" action="{{ url_for('admin.reset_password', user_id=u.user_id) }}" class="inline">{{ csrf() }}<input type="password" name="password" placeholder="new password" minlength="12" autocomplete="new-password" required><button>Set</button></form></td><td></td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% block title %}Vendor{% endblock %}
+{% block content %}
+<h1>{{ v.company_name or 'New vendor' }}</h1>
+<form method="post" class="card form-grid" data-no-offline>
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label>Company* <input name="company_name" required maxlength="150" value="{{ v.company_name or '' }}"></label>
+<label>Contact email* <input type="email" name="contact_email" required maxlength="200" value="{{ v.contact_email or '' }}"></label>
+<label>Service type <input name="service_type" maxlength="100" value="{{ v.service_type or '' }}" placeholder="HVAC, electrical…"></label>
+<label>Skills (comma-separated) <input name="skills" maxlength="300" value="{{ v.skills or '' }}"></label>
+<label>Contract start <input type="date" name="contract_start" value="{{ v.contract_start or '' }}"></label>
+<label>Contract end <input type="date" name="contract_end" value="{{ v.contract_end or '' }}"></label>
+<div><button class="primary">Save</button></div></form>
+{% endblock %}

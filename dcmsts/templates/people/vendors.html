@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% block title %}Vendors{% endblock %}
+{% block content %}{% include "people/_nav.html" %}
+<h1>Vendors / contractors</h1>
+<p><a class="button primary" href="{{ url_for('people.vendor') }}">Add vendor</a></p>
+<div class="tablewrap"><table><thead><tr><th>Company</th><th>Contact</th><th>Service</th><th>Skills</th><th>Contract</th><th>Eligible</th></tr></thead><tbody>
+{% for v in vendors %}<tr><td><a href="{{ url_for('people.vendor', vendor_id=v.vendor_id) }}">{{ v.company_name }}</a></td><td>{{ v.contact_email }}</td><td>{{ v.service_type or '' }}</td><td>{{ v.skills }}</td><td>{{ v.contract_start or '?' }} – {{ v.contract_end or '?' }}</td>
+<td>{% if v.contract_valid(today) %}yes{% else %}<span class="badge s-overdue">no (contract)</span>{% endif %}</td></tr>
+{% else %}<tr><td colspan="6" class="empty">No vendors.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

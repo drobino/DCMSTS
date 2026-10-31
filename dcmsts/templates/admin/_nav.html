@@ -1,0 +1,7 @@
+{%- set ep = request.endpoint or '' -%}
+<nav class="subnav">
+{% if current_user.can('users.manage') %}<a href="{{ url_for('admin.users') }}" class="{{ 'active' if ep in ['admin.users', 'admin.new_user', 'admin.edit_user'] }}">Users</a>{% endif %}
+{% if current_user.can('sla.manage') %}<a href="{{ url_for('admin.sla') }}" class="{{ 'active' if ep == 'admin.sla' }}">SLA &amp; escalation</a>{% endif %}
+{% if current_user.can('settings.manage') %}<a href="{{ url_for('admin.settings') }}" class="{{ 'active' if ep == 'admin.settings' }}">Settings</a>{% endif %}
+{% if current_user.can('audit.view') %}<a href="{{ url_for('admin.audit_log') }}" class="{{ 'active' if ep == 'admin.audit_log' }}">Audit log</a><a href="{{ url_for('admin.notifications') }}" class="{{ 'active' if ep == 'admin.notifications' }}">Notification log</a>{% endif %}
+</nav>

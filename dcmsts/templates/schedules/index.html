@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% from "macros.html" import csrf %}{% block title %}Schedules{% endblock %}
+{% block content %}
+<h1>Preventive maintenance schedules</h1>
+<p><a class="button primary" href="{{ url_for('schedules.new') }}">New schedule</a></p>
+<div class="tablewrap"><table><thead><tr><th>Asset</th><th>Title</th><th>Recurrence</th><th>Start</th><th>End</th><th>Next generation</th><th>Priority</th><th>Checklist</th><th>Active</th><th></th></tr></thead><tbody>
+{% for s in rows %}<tr><td><a href="{{ url_for('assets.detail', asset_id=s.asset_id) }}">{{ s.asset.asset_tag }}</a></td><td>{{ s.title }}{% if s.compliance_ref %}<br><span class="muted">{{ s.compliance_ref }}</span>{% endif %}</td><td><code>{{ s.recurrence_rule }}</code></td><td>{{ s.start_date }}</td><td>{{ s.end_date or '—' }}</td><td>{{ s.next_due_date }}</td><td>{{ s.priority }}</td><td>{{ s.checklist_template|length }} items</td><td>{{ 'yes' if s.active else 'no' }}</td>
+<td><form method="post" action="{{ url_for('schedules.toggle', schedule_id=s.schedule_id) }}">{{ csrf() }}<button>{{ 'Deactivate' if s.active else 'Activate' }}</button></form></td></tr>
+{% else %}<tr><td colspan="10" class="empty">No schedules yet.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

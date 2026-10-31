@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block title %}Sign in{% endblock %}
+{% block content %}
+<div class="card narrow">
+<h1>Welcome back</h1>
+<p class="muted">Sign in to your account to continue.</p>
+<form method="post" data-no-offline>
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label>Email <input type="email" name="email" required autocomplete="username" autofocus placeholder="you@company.com"></label>
+<label>Password <input type="password" name="password" required autocomplete="current-password" placeholder="••••••••••••"></label>
+<button class="primary">Sign in</button>
+</form></div>
+{% endblock %}

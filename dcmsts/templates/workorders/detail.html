@@ -1,0 +1,98 @@
+{% extends "base.html" %}{% from "macros.html" import status, csrf %}
+{% block title %}{{ wo.title }}{% endblock %}
+{% block content %}
+<h1>{{ wo.title }}</h1>
+<p>{{ status(wo) }} <span class="badge p-{{ wo.priority }}">{{ wo.priority }}</span> <span class="badge">{{ wo.type }}</span>
+{% if wo.prediction_id %}<span class="badge r-med">from prediction</span>{% endif %}</p>
+<dl class="facts">
+<dt>Asset</dt><dd>{% if current_user.can('assets.view') %}<a href="{{ url_for('assets.detail', asset_id=wo.asset_id) }}">{{ wo.asset.asset_tag }}</a>{% else %}{{ wo.asset.asset_tag }}{% endif %} {{ wo.asset.name }} ({{ wo.asset.category }}, {{ wo.asset.location or 'no location' }})</dd>
+<dt>Due</dt><dd>{{ wo.due_date.strftime('%Y-%m-%d %H:%M') }}{% if wo.reschedule_count %} (rescheduled {{ wo.reschedule_count }}×){% endif %}</dd>
+<dt>Assignee</dt><dd>{{ wo.assignee.full_name if wo.assignee else (wo.vendor.company_name ~ ' (vendor)' if wo.vendor else 'Unassigned') }}</dd>
+{% if wo.required_skill %}<dt>Required skill</dt><dd>{{ wo.required_skill }}</dd>{% endif %}
+{% if wo.sla_resolution_hours %}<dt>SLA resolution</dt><dd>{{ wo.sla_resolution_hours }} h from creation</dd>{% endif %}
+<dt>Time logged</dt><dd>{{ wo.time_spent_minutes }} min</dd>
+{% if wo.blocked_reason and wo.status == 'blocked' %}<dt>Blocked because</dt><dd>{{ wo.blocked_reason }}</dd>{% endif %}
+{% if wo.root_cause %}<dt>Root cause</dt><dd>{{ wo.root_cause }}</dd>{% endif %}
+{% if wo.description %}<dt>Description</dt><dd class="pre">{{ wo.description }}</dd>{% endif %}
+</dl>
+
+<div class="actions">
+{% if current_user.can('workorders.assign') and wo.status != 'completed' %}<a class="button primary" href="{{ url_for('workorders.assign', wo_id=wo.work_order_id) }}">{{ 'Reassign' if wo.status != 'unassigned' else 'Assign' }}</a>{% endif %}
+</div>
+
+{% if executor and wo.status in ['assigned','in_progress','blocked'] %}
+<section class="card"><h2>Update status</h2>
+<form method="post" action="{{ url_for('workorders.status', wo_id=wo.work_order_id) }}" class="form-grid">{{ csrf() }}
+<label>New status <select name="status">
+{% if wo.status in ['assigned','blocked'] %}<option value="in_progress">In progress</option>{% endif %}
+{% if wo.status in ['assigned','in_progress'] %}<option value="blocked">Blocked</option>{% endif %}
+{% if wo.status == 'in_progress' %}<option value="completed">Completed</option>{% endif %}
+</select></label>
+<label>Reason (required when blocking) <input name="reason" maxlength="1000"></label>
+<label class="full">Root-cause / closure notes <input name="root_cause" maxlength="2000"></label>
+<div><button class="primary">Update</button></div></form>
+{% if missing and wo.status == 'in_progress' %}<p class="flash warn">Before completion: {{ missing|join('; ') }}</p>{% endif %}
+</section>
+{% endif %}
+
+<section class="card"><h2>Checklist</h2>
+{% if wo.checklist %}
+<form method="post" action="{{ url_for('workorders.checklist', wo_id=wo.work_order_id) }}">{{ csrf() }}
+<ul class="checklist">{% for c in wo.checklist %}<li><label class="check {{ 'missing' if not c.done and wo.status == 'in_progress' }}"><input type="checkbox" name="done" value="{{ loop.index0 }}" {{ 'checked' if c.done }} {{ 'disabled' if not executor or wo.status == 'completed' }}> {{ c.item }}</label></li>{% endfor %}</ul>
+{% if executor and wo.status != 'completed' %}<button>Save checklist</button>{% endif %}
+</form>
+{% else %}<p class="muted">No checklist.</p>{% endif %}
+</section>
+
+{% if executor and wo.status != 'completed' %}
+<section class="card"><h2>Log work</h2>
+<form method="post" action="{{ url_for('workorders.log_work', wo_id=wo.work_order_id) }}" class="form-grid">{{ csrf() }}
+<label class="full">Note <textarea name="note" rows="2" maxlength="4000"></textarea></label>
+<label>Time spent (min) <input type="number" name="minutes" min="0"></label>
+<label>Part used <input name="part_name" maxlength="150"></label>
+<label>Quantity <input name="quantity" inputmode="decimal"></label>
+<label>Cost (GHS) <input name="cost" inputmode="decimal"></label>
+<div><button>Save</button></div></form>
+<h3>Evidence</h3>
+<form method="post" action="{{ url_for('workorders.upload_evidence', wo_id=wo.work_order_id) }}" enctype="multipart/form-data" data-no-offline>{{ csrf() }}
+<input type="file" name="file" accept="image/jpeg,image/png,application/pdf" capture="environment" required> <button>Upload</button></form>
+{% if current_user.can('telemetry.log') %}
+<h3>Record a reading</h3>
+<form method="post" action="{{ url_for('assets.add_reading', asset_id=wo.asset_id) }}" class="filters">{{ csrf() }}
+<input type="hidden" name="back" value="{{ url_for('workorders.detail', wo_id=wo.work_order_id) }}">
+<select name="metric_name">{% for m in metrics %}<option>{{ m }}</option>{% endfor %}</select>
+<input name="metric_value" inputmode="decimal" placeholder="Value" required><button>Log reading</button></form>
+{% endif %}
+</section>
+{% endif %}
+
+{% if wo.evidence %}<section><h2>Evidence files</h2><ul>{% for e in wo.evidence %}<li><a href="{{ url_for('workorders.evidence', wo_id=wo.work_order_id, ev_id=e.evidence_id) }}">{{ e.original_name }}</a> <span class="muted">{{ e.uploaded_at.strftime('%Y-%m-%d %H:%M') }} · sha256 {{ e.sha256[:12] }}…</span></li>{% endfor %}</ul></section>{% endif %}
+
+{% if wo.parts %}<section><h2>Parts used</h2><div class="tablewrap"><table><thead><tr><th>Part</th><th>Qty</th><th>Cost</th><th>Logged</th><th></th></tr></thead><tbody>
+{% for p in wo.parts %}<tr><td>{{ p.part_name }}</td><td>{{ p.quantity }}</td><td>{{ p.cost if p.cost is not none else '—' }}</td><td>{{ p.logged_at.strftime('%Y-%m-%d %H:%M') }}</td>
+<td>{% if executor and editable(p.logged_at) %}<form method="post" action="{{ url_for('workorders.delete_part', wo_id=wo.work_order_id, part_id=p.part_use_id) }}">{{ csrf() }}<button class="link">Remove</button></form>{% else %}<span class="muted">locked</span>{% endif %}</td></tr>{% endfor %}
+</tbody></table></div></section>{% endif %}
+
+{% if wo.status != 'completed' %}
+<section class="card"><h2>{{ 'Reschedule' if current_user.can('workorders.assign') else 'Request a schedule change' }}</h2>
+<form method="post" action="{{ url_for('workorders.reschedule', wo_id=wo.work_order_id) }}" class="form-grid">{{ csrf() }}
+<label>New due <input type="datetime-local" name="due_date" required></label>
+<label>Reason / supervisor note <input name="note" maxlength="1000"></label>
+{% if current_user.can('workorders.assign') %}<label class="check"><input type="checkbox" name="confirm_sla" value="yes"> Confirm even if outside SLA window</label>{% endif %}
+<div><button>Submit</button></div></form></section>
+{% endif %}
+
+{% if current_user.can('workorders.assign') and (wo.type == 'corrective' or wo.downtime_start) %}
+<section class="card"><h2>Downtime</h2>
+<form method="post" action="{{ url_for('workorders.downtime', wo_id=wo.work_order_id) }}" class="form-grid">{{ csrf() }}
+<label>Start <input type="datetime-local" name="downtime_start" required value="{{ wo.downtime_start.strftime('%Y-%m-%dT%H:%M') if wo.downtime_start else '' }}"></label>
+<label>End (blank = ongoing) <input type="datetime-local" name="downtime_end" value="{{ wo.downtime_end.strftime('%Y-%m-%dT%H:%M') if wo.downtime_end else '' }}"></label>
+<label>Cause <input name="downtime_cause" maxlength="150" value="{{ wo.downtime_cause or '' }}"></label>
+<label class="check"><input type="checkbox" name="downtime_planned" {{ 'checked' if wo.downtime_planned }}> Planned/approved maintenance downtime</label>
+<div><button>Save downtime</button></div></form></section>
+{% endif %}
+
+<section><h2>Activity log</h2>
+<ul class="log">{% for l in wo.logs %}<li><span class="muted">{{ l.timestamp.strftime('%Y-%m-%d %H:%M') }} · {{ l.user.full_name if l.user else 'system' }} · {{ l.action }}</span><br>{{ l.notes or '' }}</li>{% endfor %}</ul>
+</section>
+{% endblock %}

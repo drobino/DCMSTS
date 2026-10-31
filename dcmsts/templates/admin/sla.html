@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% block title %}SLA policies{% endblock %}
+{% block content %}{% include "admin/_nav.html" %}
+<h1>SLA thresholds &amp; escalation chains</h1>
+<p class="muted">Changes apply to work orders created after saving; in-flight work orders keep the SLA active when they were created.</p>
+<div class="tablewrap"><table><thead><tr><th>Category</th><th>Priority</th><th>Response (h)</th><th>Resolution (h)</th><th>Escalate every (h)</th><th>Chain</th><th>Final vendor tier</th></tr></thead><tbody>
+{% for p in policies %}<tr><td>{{ p.category or 'Facility default' }}</td><td>{{ p.priority }}</td><td>{{ p.response_hours }}</td><td>{{ p.resolution_hours }}</td><td>{{ p.escalation_hours }}</td><td>{% for uid in p.escalation_chain %}{{ loop.index }}. {{ names.get(uid, '?') }}{{ ', ' if not loop.last }}{% endfor %}</td><td>{{ p.final_vendor_id and (vendors|selectattr('vendor_id','equalto',p.final_vendor_id)|map(attribute='company_name')|first) or '—' }}</td></tr>
+{% else %}<tr><td colspan="7" class="empty">No SLA policies; work orders default to a 72-hour due time.</td></tr>{% endfor %}
+</tbody></table></div>
+<h2>Add or update a policy</h2>
+<form method="post" class="card form-grid" data-no-offline>
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label>Priority <select name="priority">{% for p in priorities %}<option>{{ p }}</option>{% endfor %}</select></label>
+<label>Asset category (blank = facility default) <input name="category" maxlength="80"></label>
+<label>Response hours <input name="response_hours" required></label>
+<label>Resolution hours <input name="resolution_hours" required></label>
+<label>Escalation interval hours <input name="escalation_hours" value="4" required></label>
+<label>Final tier vendor <select name="final_vendor_id"><option value="">None</option>{% for v in vendors %}<option value="{{ v.vendor_id }}">{{ v.company_name }}</option>{% endfor %}</select></label>
+<fieldset class="full"><legend>Escalation chain (tiers notified in this order after managers)</legend>
+{% for m in managers %}<label class="check"><input type="checkbox" name="chain" value="{{ m.user_id }}"> {{ m.full_name }} ({{ m.role_name }})</label>{% endfor %}</fieldset>
+<div><button class="primary">Save policy</button></div></form>
+{% endblock %}

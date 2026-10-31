@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% from "macros.html" import risk, csrf %}{% block title %}Asset risk{% endblock %}
+{% block content %}
+<h1>Asset failure risk</h1>
+<p class="muted">Active model: <strong>{{ version }}</strong>{% if version == 'rules-v1' %} (interim rule-based scoring until a trained model is promoted){% endif %}. Scores estimate the chance of a corrective work order within 30 days and are recommendations only.</p>
+<div class="actions">
+{% if current_user.can('predict.review') %}<form method="post" action="{{ url_for('predictive.run_scoring') }}" class="inline">{{ csrf() }}<button class="primary">Run scoring now</button></form>
+<a class="button" href="{{ url_for('predictive.queue') }}">Review queue</a>{% endif %}
+{% if current_user.can('predict.train') %}<a class="button" href="{{ url_for('predictive.models') }}">Models</a>{% endif %}
+{% if current_user.can('telemetry.ingest') %}<a class="button" href="{{ url_for('predictive.ingest') }}">Telemetry import</a>{% endif %}
+</div>
+<div class="tablewrap"><table><thead><tr><th>Asset</th><th>Category</th><th>Risk</th><th>Contributing factors</th><th>Recommended window</th><th>Scored</th><th>Decision</th></tr></thead><tbody>
+{% for p in preds %}<tr><td><a href="{{ url_for('assets.detail', asset_id=p.asset_id) }}">{{ p.asset.asset_tag }}</a> {{ p.asset.name }}</td><td>{{ p.asset.category }}</td><td>{{ risk(p) }}</td>
+<td><ul class="tight">{% for f in p.contributing_factors %}<li>{{ f.text }}</li>{% endfor %}</ul></td><td>{{ p.recommended_window_start }} – {{ p.recommended_window_end }}</td><td>{{ p.created_at.strftime('%Y-%m-%d') }} · {{ p.model_version }}</td><td>{{ p.reviewer_decision }}</td></tr>
+{% else %}<tr><td colspan="7" class="empty">No predictions yet. Run scoring.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

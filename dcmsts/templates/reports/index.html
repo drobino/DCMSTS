@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% block title %}Reports{% endblock %}
+{% block content %}
+<h1>Reports</h1>
+<form method="get" class="filters">
+<select name="type">{% for k, label in [('compliance','PM compliance'),('sla','SLA compliance'),('downtime','Downtime / MTTR / MTBF')] %}<option value="{{ k }}" {{ 'selected' if args.get('type') == k }}>{{ label }}</option>{% endfor %}</select>
+<label>From <input type="date" name="start" value="{{ args.get('start', '') }}"></label>
+<label>To <input type="date" name="end" value="{{ args.get('end', '') }}"></label>
+<select name="category"><option value="">All categories</option>{% for c in categories %}<option {{ 'selected' if args.get('category') == c }}>{{ c }}</option>{% endfor %}</select>
+<button class="primary">Generate</button></form>
+{% if report %}
+<h2>{{ report.title }}</h2>
+<div class="kpis small">{% for k, v in report.summary.items() %}<div class="kpi"><span>{{ v }}</span>{{ k }}</div>{% endfor %}</div>
+<p><a class="button" href="{{ url_for('reports.export', fmt='xlsx', **args) }}">Export Excel</a> <a class="button" href="{{ url_for('reports.export', fmt='pdf', **args) }}">Export PDF</a></p>
+<div class="tablewrap"><table><thead><tr>{% for c in report.columns %}<th>{{ c }}</th>{% endfor %}</tr></thead><tbody>
+{% for r in report.rows %}<tr>{% for c in r %}<td>{{ c }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
+{% endif %}
+{% endblock %}

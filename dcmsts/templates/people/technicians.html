@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% block title %}Technicians{% endblock %}
+{% block content %}{% include "people/_nav.html" %}
+<div class="pagehead"><div><h1>Technicians</h1><p class="sub">Skills, certifications, workload and performance.</p></div>
+{% if current_user.can('technicians.create') %}<a class="button primary" href="{{ url_for('people.new_technician') }}">+ Add technician</a>{% endif %}</div>
+<div class="tablewrap"><table><thead><tr><th>Name</th><th>Skills</th><th>Certifications</th><th>Open workload</th><th>Completed</th><th>On time</th><th>Avg resolution (h)</th></tr></thead><tbody>
+{% for r in rows %}{% set t = r.user %}<tr><td><a href="{{ url_for('people.technician', user_id=t.user_id) }}">{{ t.full_name }}</a>{% if t.status != 'active' %} <span class="muted">({{ t.status }})</span>{% endif %}</td><td>{{ t.skills }}</td>
+<td>{% for c in t.certifications %}{{ c.name }}{% if c.expires %} <span class="{{ 'badge s-overdue' if c.expires < today.isoformat() else 'muted' }}">{{ 'expired ' if c.expires < today.isoformat() }}{{ c.expires }}</span>{% endif %}{{ ', ' if not loop.last }}{% endfor %}</td>
+<td>{{ r.workload }}</td><td>{{ r.perf.completed }}</td><td>{{ r.perf.on_time }}</td><td>{{ r.perf.avg_hours if r.perf.avg_hours is not none else '—' }}</td></tr>
+{% else %}<tr><td colspan="7" class="empty">No technicians yet.{% if current_user.can("technicians.create") %} <a href="{{ url_for('people.new_technician') }}">Add the first technician</a>.{% endif %}</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

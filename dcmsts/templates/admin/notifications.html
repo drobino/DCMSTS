@@ -1,0 +1,8 @@
+{% extends "base.html" %}{% block title %}Notification log{% endblock %}
+{% block content %}{% include "admin/_nav.html" %}
+<h1>Notification delivery log</h1>
+<div class="tablewrap"><table class="small"><thead><tr><th>Created</th><th>To</th><th>Type</th><th>Subject</th><th>Status</th><th>Attempts</th><th>Last error</th></tr></thead><tbody>
+{% for n in rows %}<tr class="{{ 'deny' if n.status == 'failed' }}"><td>{{ n.created_at.strftime('%Y-%m-%d %H:%M') }}</td><td>{{ names.get(n.user_id) }}</td><td>{{ n.message_type }}</td><td>{{ n.subject }}</td><td>{{ n.status }}</td><td>{{ n.attempts }}</td><td>{{ n.last_error or '' }}</td></tr>
+{% else %}<tr><td colspan="7" class="empty">No notifications.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

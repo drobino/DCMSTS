@@ -1,0 +1,46 @@
+{% extends "base.html" %}{% from "macros.html" import wo_list, risk %}{% from "_icons.html" import icon %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="pagehead">
+  <div>
+    <p class="eyebrow">Dashboard</p>
+    <h1>Welcome back, {{ (current_user.full_name or '').split()[0] if current_user.full_name else 'there' }}</h1>
+    <p class="sub">{% if stats.overdue %}{{ stats.overdue }} task{{ 's' if stats.overdue != 1 }} overdue and {{ stats.due_week }} due in the next 7 days.{% elif stats.open %}{{ stats.open }} open task{{ 's' if stats.open != 1 }}, nothing overdue. Nice work.{% else %}All clear, there are no open tasks.{% endif %}</p>
+  </div>
+  {% if current_user.can('workorders.create') %}<a class="button primary" href="{{ url_for('workorders.new') }}">{{ icon('plus') }}Report a fault / new work order</a>{% endif %}
+</div>
+
+<div class="kpis">
+  <a class="kpi rich" href="{{ url_for('workorders.index', status='open') }}"><span class="kpi-icon">{{ icon('list') }}</span><span class="kpi-body"><span class="kpi-value">{{ stats.open }}</span><span class="kpi-label">Open tasks</span></span></a>
+  <a class="kpi rich {{ 'tone-bad' if stats.overdue else 'tone-ok' }}" href="{{ url_for('workorders.index', status='overdue') }}"><span class="kpi-icon">{{ icon('alert') }}</span><span class="kpi-body"><span class="kpi-value">{{ stats.overdue }}</span><span class="kpi-label">Overdue</span></span></a>
+  <a class="kpi rich {{ 'tone-warn' if stats.unassigned }}" href="{{ url_for('workorders.index', status='unassigned') }}"><span class="kpi-icon">{{ icon('user-x') }}</span><span class="kpi-body"><span class="kpi-value">{{ stats.unassigned }}</span><span class="kpi-label">Unassigned</span></span></a>
+  <div class="kpi rich"><span class="kpi-icon">{{ icon('clock') }}</span><span class="kpi-body"><span class="kpi-value">{{ stats.due_week }}</span><span class="kpi-label">Due in 7 days</span></span></div>
+  {% if pending is not none %}<a class="kpi rich {{ 'tone-warn' if pending }}" href="{{ url_for('predictive.queue') }}"><span class="kpi-icon">{{ icon('risk') }}</span><span class="kpi-body"><span class="kpi-value">{{ pending }}</span><span class="kpi-label">Risk reviews pending</span></span></a>{% endif %}
+</div>
+
+<div class="grid2">
+<section>
+  <div class="panelhead"><h2>{{ 'My open tasks' if not current_user.can('workorders.view_all') else 'Upcoming open tasks' }}</h2>
+  {% if current_user.can('workorders.update_own') %}<a href="{{ url_for('workorders.index', status='open') }}">View all{{ icon('arrow-right') }}</a>{% endif %}</div>
+  {{ wo_list(my_tasks) }}
+</section>
+{% if high_risk is not none %}
+<section>
+  <div class="panelhead"><h2>High-risk assets</h2><a href="{{ url_for('predictive.overview') }}">Risk overview{{ icon('arrow-right') }}</a></div>
+  <div class="tablewrap"><table><thead><tr><th>Asset</th><th>Risk</th><th>Top factor</th><th>Window</th></tr></thead><tbody>
+  {% for p in high_risk %}<tr><td><a href="{{ url_for('assets.detail', asset_id=p.asset_id) }}">{{ p.asset.asset_tag }}</a> <span class="muted">{{ p.asset.name }}</span></td><td>{{ risk(p) }}</td><td>{{ p.contributing_factors[0].text }}</td><td class="muted">{{ p.recommended_window_start }} – {{ p.recommended_window_end }}</td></tr>
+  {% else %}<tr><td colspan="4" class="empty">No assets above the risk threshold.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+{% endif %}
+</div>
+
+{% if downtime %}
+<section>
+  <div class="panelhead"><h2>Downtime, last 90 days</h2>{% if current_user.can('reports.view') %}<a href="{{ url_for('reports.index') }}">Reports{{ icon('arrow-right') }}</a>{% endif %}</div>
+  <div class="kpis small">{% for k, v in downtime.summary.items() %}<div class="kpi"><span>{{ v }}</span>{{ k }}</div>{% endfor %}</div>
+  {% if not downtime.empty %}<div class="tablewrap"><table><thead><tr>{% for c in downtime.columns %}<th>{{ c }}</th>{% endfor %}</tr></thead><tbody>
+  {% for r in downtime.rows[:8] %}<tr>{% for c in r %}<td>{{ c }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>{% endif %}
+</section>
+{% endif %}
+{% endblock %}

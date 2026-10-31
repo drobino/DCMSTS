@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% block title %}Assets{% endblock %}
+{% block content %}
+<h1>Asset registry</h1>
+{% if current_user.can('assets.manage') %}<p><a class="button primary" href="{{ url_for('assets.new') }}">Register asset</a> <a class="button" href="{{ url_for('assets.import_csv') }}">Import CSV</a></p>{% endif %}
+<form method="get" class="filters">
+<input name="q" placeholder="Search tag, name, location" value="{{ request.args.get('q','') }}">
+<select name="category"><option value="">All categories</option>{% for c in categories %}<option {{ 'selected' if request.args.get('category') == c }}>{{ c }}</option>{% endfor %}</select>
+<select name="status"><option value="">All statuses</option>{% for s in ['active','under_repair','retired'] %}<option value="{{ s }}" {{ 'selected' if request.args.get('status') == s }}>{{ s|replace('_',' ') }}</option>{% endfor %}</select>
+<button>Filter</button></form>
+<div class="tablewrap"><table><thead><tr><th>Tag</th><th>Name</th><th>Category</th><th>Location</th><th>Manufacturer</th><th>Installed</th><th>Warranty</th><th>Status</th></tr></thead><tbody>
+{% for a in assets %}<tr><td><a href="{{ url_for('assets.detail', asset_id=a.asset_id) }}">{{ a.asset_tag }}</a></td><td>{{ a.name }}</td><td>{{ a.category }}</td><td>{{ a.location or '' }}</td><td>{{ a.manufacturer or '' }}</td><td>{{ a.install_date or '' }}</td><td>{{ a.warranty_expiry or '' }}</td><td><span class="badge l-{{ a.lifecycle_status }}">{{ a.lifecycle_status|replace('_',' ') }}</span></td></tr>
+{% else %}<tr><td colspan="8" class="empty">No assets found.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

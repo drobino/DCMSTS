@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% block title %}Create user{% endblock %}
+{% block content %}{% include "admin/_nav.html" %}
+<h1>Create user</h1>
+<form method="post" class="card form-grid" data-no-offline>
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label>Full name* <input name="full_name" required maxlength="150" value="{{ form.full_name or '' }}"></label>
+<label>Email* <input type="email" name="email" required maxlength="200" value="{{ form.email or '' }}"></label>
+<label>Phone <input name="phone" maxlength="20" value="{{ form.phone or '' }}"></label>
+<label>Role* <select name="role_id">{% for r in roles %}<option value="{{ r.role_id }}" {{ 'selected' if form.role_id == r.role_id }}>{{ r.role_name }}</option>{% endfor %}</select></label>
+<label>Vendor (Vendor role only) <select name="vendor_id"><option value="">—</option>{% for v in vendors %}<option value="{{ v.vendor_id }}" {{ 'selected' if form.vendor_id == v.vendor_id }}>{{ v.company_name }}</option>{% endfor %}</select></label>
+<label>Skills (technicians, comma-separated) <input name="skills" maxlength="300" placeholder="e.g. electrical, hvac, ups" value="{{ form.skills or '' }}"></label>
+<label>Initial password* (12+ chars, letters and digits) <input type="password" name="password" required minlength="12" autocomplete="new-password"></label>
+<div><button class="primary">Create</button></div></form>
+<p class="muted">Administrators and Managers must enrol in MFA on first sign-in. Give the user their initial password through a separate channel; they can change it after signing in.</p>
+{% endblock %}

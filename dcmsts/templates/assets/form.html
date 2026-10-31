@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% block title %}{{ 'Edit' if asset.asset_id else 'Register' }} asset{% endblock %}
+{% block content %}
+<h1>{{ 'Edit ' ~ asset.asset_tag if asset.asset_id else 'Register asset' }}</h1>
+{% if dup %}<div class="flash error">Conflicting record: <a href="{{ url_for('assets.detail', asset_id=dup.asset_id) }}">{{ dup.asset_tag }} – {{ dup.name }}</a></div>{% endif %}
+<form method="post" class="card form-grid" data-no-offline>
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label>Asset tag* <input name="asset_tag" required maxlength="50" value="{{ request.form.asset_tag or asset.asset_tag or '' }}"></label>
+<label>Name* <input name="name" required maxlength="150" value="{{ request.form.name or asset.name or '' }}"></label>
+<label>Category* <input name="category" required maxlength="80" list="cats" value="{{ request.form.category or asset.category or '' }}">
+<datalist id="cats"><option>UPS</option><option>PDU</option><option>CRAC</option><option>Generator</option><option>Rack</option><option>Fire Suppression</option><option>Network</option></datalist></label>
+<label>Location <input name="location" maxlength="150" value="{{ request.form.location or asset.location or '' }}"></label>
+<label>Manufacturer <input name="manufacturer" maxlength="100" value="{{ request.form.manufacturer or asset.manufacturer or '' }}"></label>
+<label>Install date <input type="date" name="install_date" value="{{ request.form.install_date or asset.install_date or '' }}"></label>
+<label>Warranty expiry <input type="date" name="warranty_expiry" value="{{ request.form.warranty_expiry or asset.warranty_expiry or '' }}"></label>
+<div><button class="primary">Save</button></div>
+</form>
+{% endblock %}

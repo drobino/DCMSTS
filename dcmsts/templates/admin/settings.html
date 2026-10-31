@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% block title %}Settings{% endblock %}
+{% block content %}{% include "admin/_nav.html" %}
+<h1>System settings</h1>
+<form method="post" class="card form-grid" data-no-offline>
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label>High-risk threshold (0–1) <input name="risk_threshold" value="{{ s.risk_threshold }}"></label>
+<label>Review-queue threshold (0–1) <input name="review_threshold" value="{{ s.review_threshold }}"></label>
+<label>Reminder lead time (hours) <input name="reminder_hours" value="{{ s.reminder_hours }}"></label>
+<label>Max reschedules without supervisor note <input name="max_reschedules" value="{{ s.max_reschedules }}"></label>
+<label>Max invalid ratio for telemetry batches (0–1) <input name="telemetry_max_invalid_ratio" value="{{ s.telemetry_max_invalid_ratio }}"></label>
+<label>Schedule generation horizon (days) <input name="schedule_horizon_days" value="{{ s.schedule_horizon_days }}"></label>
+<label class="full">Categories requiring evidence before completion (comma-separated) <input name="evidence_required_categories" value="{{ s.evidence_required_categories|join(', ') }}"></label>
+<div><button class="primary">Save</button></div></form>
+{% endblock %}

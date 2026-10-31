@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% block title %}New schedule{% endblock %}
+{% block content %}
+<h1>New recurring preventive schedule</h1>
+<form method="post" class="card form-grid" data-no-offline>
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label>Asset* <select name="asset_id" required>{% for a in assets %}<option value="{{ a.asset_id }}" {{ 'selected' if form.asset_id == a.asset_id }}>{{ a.asset_tag }} – {{ a.name }} ({{ a.category }})</option>{% endfor %}</select></label>
+<label>Title* <input name="title" required maxlength="150" value="{{ form.title or '' }}"></label>
+<label>Repeats* <select name="freq">{% for f in freqs %}<option {{ 'selected' if (form.freq or 'MONTHLY') == f }}>{{ f }}</option>{% endfor %}</select></label>
+<label>Every N periods* <input type="number" name="interval" min="1" max="366" value="{{ form.interval or 1 }}" required></label>
+<label>Start date* <input type="date" name="start_date" required value="{{ form.start_date or today }}"></label>
+<label>End date <input type="date" name="end_date" value="{{ form.end_date or '' }}"></label>
+<label>Priority <select name="priority">{% for p in priorities %}<option {{ 'selected' if (form.priority or 'medium') == p }}>{{ p }}</option>{% endfor %}</select></label>
+<label>Required skill <input name="required_skill" maxlength="80" value="{{ form.required_skill or '' }}" placeholder="e.g. electrical"></label>
+<label>Estimated minutes <input type="number" name="estimated_minutes" min="1" value="{{ form.estimated_minutes or '' }}"></label>
+<label>Compliance reference <input name="compliance_ref" maxlength="150" value="{{ form.compliance_ref or '' }}" placeholder="e.g. Manufacturer manual §4.2 / ISO 27001 A.11.2.4"></label>
+<label class="full">Checklist* (one item per line) <textarea name="checklist" rows="6" required>{{ form.checklist or '' }}</textarea></label>
+{% if overlaps %}<div class="full flash warn">Existing active schedules for this asset: {% for o in overlaps %}<strong>{{ o.title }}</strong> ({{ o.recurrence_rule }}){{ ', ' if not loop.last }}{% endfor %}.
+<label class="check"><input type="checkbox" name="confirm_overlap" value="yes"> I confirm an additional overlapping schedule is intended</label></div>{% endif %}
+<div><button class="primary">Create schedule</button></div>
+</form>
+{% endblock %}

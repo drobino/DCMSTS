@@ -1,0 +1,29 @@
+{% macro csrf() %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endmacro %}
+{% macro status(wo) %}<span class="badge s-{{ wo.status }}">{{ wo.status|replace('_',' ') }}</span>{% if wo.is_overdue and wo.status != 'completed' %} <span class="badge s-overdue">overdue</span>{% endif %}{% endmacro %}
+{% macro risk(p) %}{% set r = p.risk_score|float %}<span class="badge {{ 'r-high' if r >= 0.6 else ('r-med' if r >= 0.3 else 'r-low') }}">{{ '%.0f'|format(r*100) }}%</span>{% if p.low_confidence %} <span class="badge muted-badge" title="Sparse data">low confidence</span>{% endif %}{% endmacro %}
+{% macro wo_table(rows, show_asset=true) %}
+<div class="tablewrap"><table>
+<thead><tr><th>Due</th>{% if show_asset %}<th>Asset</th>{% endif %}<th>Title</th><th>Type</th><th>Priority</th><th>Status</th><th>Assignee</th></tr></thead>
+<tbody>
+{% for wo in rows %}
+<tr><td>{{ wo.due_date.strftime('%Y-%m-%d %H:%M') }}</td>{% if show_asset %}<td>{{ wo.asset.asset_tag }}</td>{% endif %}
+<td><a href="{{ url_for('workorders.detail', wo_id=wo.work_order_id) }}">{{ wo.title }}</a></td>
+<td>{{ wo.type }}</td><td><span class="badge p-{{ wo.priority }}">{{ wo.priority }}</span></td><td>{{ status(wo) }}</td>
+<td>{{ wo.assignee.full_name if wo.assignee else (wo.vendor.company_name if wo.vendor else '—') }}</td></tr>
+{% else %}<tr><td colspan="7" class="empty">No work orders.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endmacro %}
+{% macro wo_list(rows, empty='No open tasks.') %}
+<ul class="tasklist">
+{% for wo in rows %}{% set late = wo.is_overdue and wo.status != 'completed' %}
+<li><a class="task{{ ' is-overdue' if late }}" href="{{ url_for('workorders.detail', wo_id=wo.work_order_id) }}">
+  <span class="task-date"><b>{{ wo.due_date.day }}</b><small>{{ wo.due_date.strftime('%b') }}</small></span>
+  <span class="task-main">
+    <span class="task-title">{{ wo.title }}</span>
+    <span class="task-meta"><span>{{ wo.asset.asset_tag }}</span><span>{{ wo.due_date.strftime('%H:%M') }}</span><span>{{ wo.type|capitalize }}</span><span>{{ wo.assignee.full_name if wo.assignee else (wo.vendor.company_name if wo.vendor else 'Unassigned') }}</span></span>
+  </span>
+  <span class="task-badges"><span class="badge p-{{ wo.priority }}">{{ wo.priority }}</span>{{ status(wo) }}</span>
+</a></li>
+{% else %}<li class="empty">{{ empty }}</li>{% endfor %}
+</ul>
+{% endmacro %}

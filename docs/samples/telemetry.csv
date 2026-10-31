@@ -1,0 +1,4 @@
+asset_tag,metric_name,metric_value,recorded_at
+UPS-101,temperature,26.4,2026-10-01T08:00:00
+UPS-101,load_pct,58,2026-10-01T08:00:00
+UPS-101,runtime_hours,18250,2026-10-01T08:00:00

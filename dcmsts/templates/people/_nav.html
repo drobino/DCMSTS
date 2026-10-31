@@ -1,0 +1,5 @@
+{%- set ep = request.endpoint or '' -%}
+<nav class="subnav">
+<a href="{{ url_for('people.technicians') }}" class="{{ 'active' if ep in ['people.technicians', 'people.technician'] }}">Technicians</a>
+<a href="{{ url_for('people.vendors') }}" class="{{ 'active' if ep in ['people.vendors', 'people.vendor'] }}">Vendors</a>
+</nav>

@@ -1,0 +1,8 @@
+{% extends "base.html" %}{% block title %}Inbox{% endblock %}
+{% block content %}
+<h1>My notifications</h1>
+<div class="tablewrap"><table><thead><tr><th>When</th><th>Type</th><th>Subject</th><th>Message</th><th>Delivery</th></tr></thead><tbody>
+{% for n in rows %}<tr><td>{{ n.created_at.strftime('%Y-%m-%d %H:%M') }}</td><td>{{ n.message_type }}</td><td>{% if n.work_order_id %}<a href="{{ url_for('workorders.detail', wo_id=n.work_order_id) }}">{{ n.subject }}</a>{% else %}{{ n.subject }}{% endif %}</td><td class="pre">{{ n.body }}</td><td>{{ n.status }}</td></tr>
+{% else %}<tr><td colspan="5" class="empty">No notifications.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

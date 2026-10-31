@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% block title %}Audit log{% endblock %}
+{% block content %}{% include "admin/_nav.html" %}
+<h1>Audit log</h1>
+{% if chain_ok %}<div class="flash info">Hash chain verified: no entries have been altered or removed.</div>{% else %}<div class="flash error">Hash chain BROKEN at entry {{ bad }} — investigate possible tampering.</div>{% endif %}
+<form method="get" class="filters"><input name="action" placeholder="action (e.g. access_denied)" value="{{ request.args.get('action','') }}"><input name="entity" placeholder="entity (e.g. WORK_ORDER)" value="{{ request.args.get('entity','') }}"><button>Filter</button></form>
+<div class="tablewrap"><table class="small"><thead><tr><th>#</th><th>When (UTC)</th><th>User</th><th>Action</th><th>Entity</th><th>Before</th><th>After</th><th>IP</th></tr></thead><tbody>
+{% for e in rows %}<tr class="{{ 'deny' if e.action in ['access_denied','login_failed','mfa_failed'] }}"><td>{{ e.audit_id }}</td><td>{{ e.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td><td>{{ names.get(e.user_id, 'system' if not e.user_id else e.user_id[:8]) }}</td><td>{{ e.action }}</td><td>{{ e.entity_type }} {{ (e.entity_id or '')[:8] }}</td><td class="json">{{ e.before_value|tojson if e.before_value else '' }}</td><td class="json">{{ e.after_value|tojson if e.after_value else '' }}</td><td>{{ e.ip_address or '' }}</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

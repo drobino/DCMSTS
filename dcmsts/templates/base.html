@@ -1,0 +1,85 @@
+{% from "_icons.html" import icon %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>{% block title %}DCMSTS{% endblock %} · DCMSTS</title>
+<script src="{{ url_for('static', filename='theme.js') }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="{{ url_for('static', filename='app.js') }}" defer></script>
+{% block scripts %}{% endblock %}
+</head>
+{% macro brandmark() -%}
+<span class="brandmark" aria-hidden="true">{{ icon('bolt') }}</span>
+{%- endmacro %}
+{% if current_user %}
+{%- set ep = request.endpoint or '' -%}
+{%- set bp = request.blueprint or '' -%}
+{%- macro navlink(href, label, ico, active) -%}
+<a href="{{ href }}" class="navlink{{ ' active' if active }}"{% if active %} aria-current="page"{% endif %}>{{ icon(ico) }}<span>{{ label }}</span></a>
+{%- endmacro %}
+<body class="app">
+<input type="checkbox" id="navtoggle" class="navtoggle" aria-hidden="true" tabindex="-1">
+<aside class="sidebar" aria-label="Main navigation">
+  <div class="sidebar-head">
+    <a class="brand" href="{{ url_for('dashboard.index') }}">{{ brandmark() }}<span class="brand-text">DCMSTS<small>Maintenance &amp; tracking</small></span></a>
+    <label for="navtoggle" class="iconbtn sidebar-close" title="Close menu">{{ icon('close') }}</label>
+  </div>
+  <nav class="sidenav">
+    <div class="navgroup">Overview</div>
+    {{ navlink(url_for('dashboard.index'), 'Dashboard', 'dashboard', ep == 'dashboard.index') }}
+    {% if current_user.can('calendar.view') %}{{ navlink(url_for('dashboard.calendar_view'), 'Calendar', 'calendar', ep == 'dashboard.calendar_view') }}{% endif %}
+    {{ navlink(url_for('dashboard.notifications'), 'Inbox', 'inbox', ep == 'dashboard.notifications') }}
+    <div class="navgroup">Operations</div>
+    {% if current_user.can('workorders.update_own') %}{{ navlink(url_for('workorders.index', status='open'), 'Work orders', 'workorders', bp == 'workorders') }}{% endif %}
+    {% if current_user.can('assets.view') %}{{ navlink(url_for('assets.index'), 'Assets', 'assets', bp == 'assets') }}{% endif %}
+    {% if current_user.can('schedules.manage') %}{{ navlink(url_for('schedules.index'), 'Schedules', 'schedules', bp == 'schedules') }}{% endif %}
+    {% if current_user.can('predict.view') %}{{ navlink(url_for('predictive.overview'), 'Risk', 'risk', bp == 'predictive') }}{% endif %}
+    {% if current_user.can('people.manage') or current_user.can('reports.view') or current_user.can('users.manage') or current_user.can('sla.manage') %}
+    <div class="navgroup">Management</div>
+    {% if current_user.can('people.manage') %}{{ navlink(url_for('people.technicians'), 'People', 'people', bp == 'people') }}{% endif %}
+    {% if current_user.can('reports.view') %}{{ navlink(url_for('reports.index'), 'Reports', 'reports', bp == 'reports') }}{% endif %}
+    {% if current_user.can('users.manage') or current_user.can('sla.manage') %}{{ navlink(url_for('admin.sla'), 'Admin', 'admin', bp == 'admin') }}{% endif %}
+    {% endif %}
+  </nav>
+  <div class="sidebar-foot">
+    <div class="usercard">
+      <span class="avatar" aria-hidden="true">{{ ((current_user.full_name or '?').split()|map('first')|join('')|upper)[:2] }}</span>
+      <span class="userinfo"><strong>{{ current_user.full_name }}</strong><small>{{ current_user.role_name|capitalize }}</small></span>
+    </div>
+    <div class="footactions">
+      <a class="iconbtn" href="{{ url_for('auth.change_password') }}" title="Change password" aria-label="Change password">{{ icon('key') }}</a>
+      <button type="button" class="iconbtn theme-toggle" data-theme-toggle title="Toggle light / dark theme" aria-label="Toggle light or dark theme">{{ icon('moon', 'icon i-moon') }}{{ icon('sun', 'icon i-sun') }}</button>
+      <form method="post" action="{{ url_for('auth.logout') }}" class="inline" data-no-offline><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="iconbtn" title="Sign out" aria-label="Sign out">{{ icon('logout') }}</button></form>
+    </div>
+  </div>
+</aside>
+<label for="navtoggle" class="scrim" aria-hidden="true"></label>
+<div class="shell">
+  <header class="mobilebar">
+    <label for="navtoggle" class="iconbtn" title="Open menu" aria-label="Open menu">{{ icon('menu') }}</label>
+    <a class="brand" href="{{ url_for('dashboard.index') }}">{{ brandmark() }}<span class="brand-text">DCMSTS</span></a>
+    <button type="button" class="iconbtn theme-toggle" data-theme-toggle aria-label="Toggle light or dark theme">{{ icon('moon', 'icon i-moon') }}{{ icon('sun', 'icon i-sun') }}</button>
+  </header>
+  <div id="offline-banner" class="banner warn hidden">Offline: updates are saved on this device and will sync when the connection returns.</div>
+{% else %}
+<body class="auth">
+<div class="authwrap">
+  <div class="authbrand">{{ brandmark() }}<span class="brand-text">DCMSTS<small>Data Center Maintenance Scheduling &amp; Tracking</small></span></div>
+  <div id="offline-banner" class="banner warn hidden">Offline: updates are saved on this device and will sync when the connection returns.</div>
+{% endif %}
+  <main>
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}<div class="flash {{ cat }}" role="status">{{ msg }}</div>{% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+  </main>
+{% if current_user %}
+</div>
+</body>
+{% else %}  <div class="authfoot"><button type="button" class="iconbtn theme-toggle" data-theme-toggle aria-label="Toggle light or dark theme">{{ icon('moon', 'icon i-moon') }}{{ icon('sun', 'icon i-sun') }}</button><span>Secure session · TLS · MFA</span></div>
+</div>
+</body>
+{% endif %}
+</html>

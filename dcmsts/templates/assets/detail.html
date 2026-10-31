@@ -1,0 +1,41 @@
+{% extends "base.html" %}{% from "macros.html" import wo_table, risk, csrf %}
+{% block title %}{{ asset.asset_tag }}{% endblock %}
+{% block content %}
+<h1>{{ asset.asset_tag }} · {{ asset.name }} <span class="badge l-{{ asset.lifecycle_status }}">{{ asset.lifecycle_status|replace('_',' ') }}</span></h1>
+<dl class="facts">
+<dt>Category</dt><dd>{{ asset.category }}</dd><dt>Location</dt><dd>{{ asset.location or '—' }}</dd>
+<dt>Manufacturer</dt><dd>{{ asset.manufacturer or '—' }}</dd><dt>Installed</dt><dd>{{ asset.install_date or '—' }}</dd>
+<dt>Warranty expiry</dt><dd>{{ asset.warranty_expiry or '—' }}{% if asset.warranty_expiry and asset.warranty_expiry < today %} <span class="badge s-overdue">expired</span>{% endif %}</dd>
+</dl>
+<div class="actions">
+{% if current_user.can('assets.manage') %}
+<a class="button" href="{{ url_for('assets.edit', asset_id=asset.asset_id) }}">Edit</a>
+<form method="post" action="{{ url_for('assets.set_status', asset_id=asset.asset_id) }}" class="inline">{{ csrf() }}
+<select name="lifecycle_status">{% for s in ['active','under_repair','retired'] %}<option value="{{ s }}" {{ 'selected' if asset.lifecycle_status == s }}>{{ s|replace('_',' ') }}</option>{% endfor %}</select>
+<button>Set status</button></form>
+{% endif %}
+{% if current_user.can('workorders.create') %}<a class="button" href="{{ url_for('workorders.new', asset_id=asset.asset_id) }}">Report fault</a>{% endif %}
+{% if current_user.can('reports.view') %}<a class="button" href="{{ url_for('reports.export', fmt='xlsx', type='asset', asset_id=asset.asset_id) }}">History (Excel)</a>
+<a class="button" href="{{ url_for('reports.export', fmt='pdf', type='asset', asset_id=asset.asset_id) }}">History (PDF)</a>
+<a class="button" href="{{ url_for('reports.index', type='downtime', category=asset.category) }}">Downtime</a>{% endif %}
+</div>
+{% if predictions %}
+<section><h2>Failure-risk predictions</h2>
+<div class="tablewrap"><table><thead><tr><th>Date</th><th>Model</th><th>Risk</th><th>Contributing factors</th><th>Window</th><th>Decision</th></tr></thead><tbody>
+{% for p in predictions %}<tr><td>{{ p.created_at.strftime('%Y-%m-%d') }}</td><td>{{ p.model_version }}</td><td>{{ risk(p) }}</td><td><ul class="tight">{% for f in p.contributing_factors %}<li>{{ f.text }}</li>{% endfor %}</ul></td><td>{{ p.recommended_window_start }} – {{ p.recommended_window_end }}</td><td>{{ p.reviewer_decision }}</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endif %}
+<section><h2>Maintenance history</h2>{{ wo_table(wos, show_asset=false) }}</section>
+<section><h2>Schedules</h2>
+<ul>{% for s in schedules %}<li>{{ s.title }} — <code>{{ s.recurrence_rule }}</code> from {{ s.start_date }}{% if not s.active %} (inactive){% endif %}</li>{% else %}<li class="muted">No schedules.</li>{% endfor %}</ul></section>
+<section><h2>Telemetry</h2>
+{% if current_user.can('telemetry.log') and asset.lifecycle_status != 'retired' %}
+<form method="post" action="{{ url_for('assets.add_reading', asset_id=asset.asset_id) }}" class="filters">{{ csrf() }}
+<select name="metric_name">{% for m in metrics %}<option>{{ m }}</option>{% endfor %}</select>
+<input name="metric_value" inputmode="decimal" placeholder="Value" required><button>Log reading</button></form>
+{% endif %}
+<div class="tablewrap"><table><thead><tr><th>When</th><th>Metric</th><th>Value</th><th>Source</th></tr></thead><tbody>
+{% for r in readings %}<tr><td>{{ r.recorded_at.strftime('%Y-%m-%d %H:%M') }}</td><td>{{ r.metric_name }}</td><td>{{ '%.2f'|format(r.metric_value|float) }}</td><td>{{ r.source }}</td></tr>
+{% else %}<tr><td colspan="4" class="empty">No readings.</td></tr>{% endfor %}</tbody></table></div>
+</section>
+{% endblock %}

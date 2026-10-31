@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% from "macros.html" import risk %}{% block title %}Review recommendation{% endblock %}
+{% block content %}
+<h1>Recommendation: {{ p.asset.asset_tag }} {{ p.asset.name }}</h1>
+<p>Risk {{ risk(p) }} · model {{ p.model_version }} · scored {{ p.created_at.strftime('%Y-%m-%d %H:%M') }} · decision <strong>{{ p.reviewer_decision }}</strong></p>
+<h2>Why</h2><ul>{% for f in p.contributing_factors %}<li>{{ f.text }}</li>{% endfor %}</ul>
+<p>Recommended window: <strong>{{ p.recommended_window_start }} – {{ p.recommended_window_end }}</strong></p>
+{% if p.reviewer_decision == 'pending' %}
+<form method="post" class="card form-grid">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label>Decision <select name="decision"><option value="approved">Approve – create work order</option><option value="adjusted">Adjust window – create work order</option><option value="dismissed">Dismiss</option></select></label>
+<label>Adjusted start <input type="date" name="start" value="{{ p.recommended_window_start }}"></label>
+<label>Adjusted end <input type="date" name="end" value="{{ p.recommended_window_end }}"></label>
+<label class="full">Reason (required to adjust or dismiss) <input name="note" maxlength="1000"></label>
+<div><button class="primary">Record decision</button></div></form>
+{% else %}<p>Reviewed {{ p.reviewed_at }}: {{ p.review_note or '' }}</p>{% endif %}
+{% endblock %}

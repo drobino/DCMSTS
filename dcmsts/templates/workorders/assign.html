@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% block title %}Assign{% endblock %}
+{% block content %}
+<h1>Assign: {{ wo.title }}</h1>
+<p>{{ wo.asset.asset_tag }} · due {{ wo.due_date.strftime('%Y-%m-%d %H:%M') }} · priority {{ wo.priority }}{% if wo.required_skill %} · requires <strong>{{ wo.required_skill }}</strong>{% endif %}</p>
+{% if c.no_qualified %}<div class="flash warn">No qualified technician or vendor has the required skill. You may assign the closest-skilled technician with an override reason, or widen the search.</div>{% endif %}
+<form method="post" class="card">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<h2>Suggested technicians <span class="muted">(skill match, ranked by weighted workload)</span></h2>
+<div class="tablewrap"><table><thead><tr><th></th><th>Technician</th><th>Workload</th><th>Same-day conflicts</th></tr></thead><tbody>
+{% for cand in c.technicians %}<tr><td><input type="radio" name="target" value="user:{{ cand.user.user_id }}" id="u{{ loop.index }}" {{ 'checked' if loop.first }}></td><td><label for="u{{ loop.index }}">{{ cand.user.full_name }}</label></td><td>{{ cand.workload }}</td>
+<td>{% if cand.conflicts %}<span class="badge s-overdue">{{ cand.conflicts|length }} conflict(s)</span> {% for x in cand.conflicts %}{{ x.title }} ({{ x.priority }}){{ ', ' if not loop.last }}{% endfor %}{% else %}free{% endif %}</td></tr>
+{% else %}<tr><td colspan="4" class="empty">No skill-matched technicians.</td></tr>{% endfor %}
+</tbody></table></div>
+<h2>Vendors with valid contracts</h2>
+<ul>{% for v in c.vendors %}<li><label class="check"><input type="radio" name="target" value="vendor:{{ v.vendor_id }}"> {{ v.company_name }} ({{ v.service_type or 'general' }}, contract to {{ v.contract_end }})</label></li>{% else %}<li class="muted">None eligible.</li>{% endfor %}</ul>
+<details><summary>Override: choose any technician</summary>
+<ul>{% for t in all_techs %}<li><label class="check"><input type="radio" name="target" value="user:{{ t.user_id }}"> {{ t.full_name }} <span class="muted">{{ t.skills }}</span></label></li>{% endfor %}</ul>
+</details>
+<label>Override reason (required outside suggestions or for overlapping high-priority work) <input name="override_reason" maxlength="500"></label>
+<button class="primary">Assign</button>
+</form>
+{% endblock %}
